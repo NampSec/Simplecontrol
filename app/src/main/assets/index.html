@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screenshot Viewer</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .full-screen-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            /* 防止图片下的空隙 */
+        }
+
+        .floating-button {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(0, 0, 0, 0); /* Set to transparent */
+            color: white;
+            font-size: 24px;
+            line-height: 50px;
+            text-align: center;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 1000;
+            border: 2px solid rgba(0, 0, 0, 0.5); /* Optional: border to make it visible */
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+/Edge */
+            user-select: none; /* Standard */
+        }
+
+
+        .menu {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            padding: 10px;
+            z-index: 999;
+        }
+
+        .menu button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            text-align: left;
+            font-size: 16px;
+        }
+
+        .menu button:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+<img id="screenshot" src="/image_screen.png" alt="Screenshot" class="full-screen-image">
+<div class="floating-button" onclick="toggleMenu()">
+    +
+</div>
+<div class="menu" id="menu">
+    <button onclick="sendRequest('back')">Back</button>
+    <button onclick="sendRequest('scrollup')">Up</button>
+    <button onclick="sendRequest('scrolldown')">Down</button>
+    <button id="lockButton" onclick="toggleUpdate()">Lock</button>
+</div>
+<script>
+    var isLocked = false; // 图片更新状态，默认未锁定
+    var intervalId; // 用于保存间隔循环的ID
+
+    function toggleMenu() {
+        var menu = document.getElementById('menu');
+        if (menu.style.display === 'block') {
+            menu.style.display = 'none';
+        } else {
+            menu.style.display = 'block';
+        }
+    }
+
+    // 定义一个函数来更新图片
+    function updateImage() {
+        // 为图片URL添加时间戳以防止缓存
+        var randomParam = new Date().getTime();
+        screenshotImg.src = "/image_screen.png?" + randomParam;
+    }
+
+    // 定义一个函数发送请求
+    function sendRequest(action, data) {
+        var xhr = new XMLHttpRequest();
+        var url = '/' + action + (data ? '?' + data : '');
+        xhr.open('GET', url, true);
+        xhr.send(); // 发送请求，不关心响应
+    }
+
+    // 定义一个函数用于切换图片更新状态
+    function toggleUpdate() {
+        isLocked = !isLocked; // 切换状态
+        var lockButton = document.getElementById('lockButton');
+        if (isLocked) {
+            lockButton.textContent = 'Unlock';
+            sendRequest('refresh');
+            intervalId = setInterval(updateImage, 5000); // 每5秒更新一次图片
+        } else {
+            lockButton.textContent = 'Lock';
+            clearInterval(intervalId); // 清除更新间隔循环
+        }
+    }
+
+    // 获取图片元素
+    var screenshotImg = document.getElementById('screenshot');
+
+    // 为整个文档添加点击事件监听器
+    document.addEventListener('click', function(event) {
+        var target = event.target;
+        var tagName = target.tagName.toLowerCase();
+        if (tagName !== 'div' && tagName !== 'button') {
+            sendRequest('update', 'x=' + encodeURIComponent(event.clientX) + '&y=' + encodeURIComponent(event.clientY));
+            if (!isLocked) {
+                setTimeout(updateImage, 1800); // 点击网页后1.8S秒后更新图片
+            }
+        }else
+        {
+            sendRequest('refresh');
+            setTimeout(updateImage, 1800); // 点击网页后3.5秒后更新图片
+        }
+    });
+</script>
+</body>
+</html>
